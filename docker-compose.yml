@@ -1,0 +1,58 @@
+version: '3.5'
+
+services:
+  sf5-lagunalink-be-web:
+    container_name: sf5-lagunalink-be-web
+    build:
+      context: ./docker/nginx
+      args:
+        UID: $U_ID
+    ports:
+      - 200:80
+    volumes:
+      - ./public:/appdata/www/public
+    depends_on:
+      - sf5-lagunalink-be-phpfpm
+    networks:
+      - sf5-lagunalink-be-network
+
+  sf5-lagunalink-be-phpfpm:
+    container_name: sf5-lagunalink-be-phpfpm
+    build:
+      context: docker/php
+      args:
+        UID: $U_ID
+    environment:
+      PHP_IDE_CONFIG: serverName=Docker
+      PHP_XDEBUG_ENABLED: 1
+      XDEBUG_CONFIG: remote_host=172.17.0.1 remote_port=9005
+    volumes:
+      - ./:/appdata/www
+      - ./docker/php/xdebug-linux.ini:/usr/local/etc/php/conf.d/xdebug.ini
+      - ~/.ssh/id_rsa:/home/appuser/.ssh/id_rsa
+    depends_on:
+      - sf5-lagunalink-be-db
+    networks:
+      - sf5-lagunalink-be-network
+
+  sf5-lagunalink-be-db:
+    container_name: sf5-lagunalink-be-db
+    image: mariadb:10.3
+    ports:
+      - 3350:3306
+    environment:
+      MYSQL_DATABASE: sf5-lagunalink-be_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    command: mysqld --sql_mode="STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION"
+    volumes:
+      - sf5-lagunalink-be-db-data:/var/lib/mysql
+    networks:
+      - sf5-lagunalink-be-network
+
+volumes:
+  sf5-lagunalink-be-db-data:
+
+networks:
+  sf5-lagunalink-be-network:
